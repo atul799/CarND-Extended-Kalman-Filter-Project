@@ -134,6 +134,9 @@ int main()
           msgJson["rmse_y"] =  RMSE(1);
           msgJson["rmse_vx"] = RMSE(2);
           msgJson["rmse_vy"] = RMSE(3);
+
+          //output RMSE to compare performance between sensors
+          cout<<"RMSE: "<<","<<RMSE(0)<<","<<RMSE(1)<<","<<RMSE(2)<<","<<RMSE(3)<<endl;
           auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
           // std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);

@@ -53,7 +53,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 
 }
 
-// this function calulates Jacobian for non-linear kalman measurement function of Radar data to linearize H_ matrix
+// this function calculates Jacobian for non-linear kalman measurement function of Radar data to linearize H_ matrix
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
   /**
     * Calculate a Jacobian here.

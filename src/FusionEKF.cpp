@@ -44,9 +44,23 @@ FusionEKF::FusionEKF() {
        0,0,0,0,
        0,0,0,0;
 
-  //init covarence mat
-  //cov of vx-vx and vy-vy initialized to 1000, can be set at lower/rand values ??
+
+  ekf_.x_ = VectorXd(4);
+
+  //init covariance mat
+  //cov of vx-vx and vy-vy initialized to 1000, can be set at lower or rand values or higher values ??
+  //high when confidence on initial state vectors (px/py/vx/vy) is low and is low when relatively high confidence in initial
+  //state vector, never all values in vector P as 0 (0 means absolute certainity)
+  //normally diagonal values are initialized
+  //px/py is initialized from measurement so 1 shall be okay
+  //experiment with vx/vy --> since radar measurements has polar coords initializing with 1 for vx/vy if init is from radar
+  //and 1000 when init is from laser --> move init of P_ to initialization block in ProcessMeasurement method
+  //in the setup given for this project first measure is from LASER and we don't get values of vx/vy
+  //so cov for vx/vy should be high
   ekf_.P_ = MatrixXd(4, 4);
+
+
+  //moved ekf_P_ to respective sensor init block
   //ekf_.P_ << 1, 0, 0, 0,
   //             0, 1, 0, 0,
   //             0, 0, 1000, 0,
@@ -71,7 +85,17 @@ FusionEKF::~FusionEKF() {}
 
 void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
-
+	//here variables are set to experiment with only 1 sensor or both
+	//individual or both sensors, bool type
+	bool radar_only=0;
+	bool laser_only=0;
+	bool both_sensors=1;
+	//sensor_type=0 --> radar only
+	//sensor_type=1 --> laser only
+	//sensor_type=2 --> both
+	int  sensor_type=2;
+	//int  sensor_type=0;
+	//int  sensor_type=1;
   /*****************************************************************************
    *  Initialization
    ****************************************************************************/
@@ -82,13 +106,19 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       * Remember: you'll need to convert radar from polar to cartesian coordinates.
     */
     // first measurement
-    cout << "EKF: " << endl;
+    //cout << "EKF: " << endl;
     
 
     //init state vector, starting with 1 for px,py,vx,vy, is reinitialized with measurement data anyways
     //in following section
-    ekf_.x_ = VectorXd(4);
-    ekf_.x_ << 1, 1, 1, 1;
+    //ekf_.x_ = VectorXd(4);
+    //ekf_.x_ << 1, 1, 1, 1;
+
+
+
+
+    // init is not changed as first data can be from laser or radar and
+    //radar data is changed to px/py/vx/vy in radar anyways in pred
 
     //if sensor data is from RADAR, measurement data --> rho/phi and rhodot
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
@@ -108,8 +138,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       //float vy=0;
       float vx=rhodot*cos(phi);
       float vy=rhodot*sin(phi);
-	  cout <<"Radar init, px,py,vx,vy"<<ekf_.x_<<endl;
+	  //cout <<"Radar init, px,py,vx,vy"<<ekf_.x_<<endl;
       ekf_.x_<<px,py,vx,vy;
+
+      ekf_.P_ <<   1, 0, 0, 0,
+                   0, 1, 0, 0,
+                   0, 0, 1, 0,
+                   0, 0, 0, 1;
       //cout <<"Radar init, px,py,vx,vy"<<ekf_.x_ <<endl;
     }
     //if sensor data is from LIDAR, measurement data --> px and py directly
@@ -121,6 +156,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       
 
       ekf_.x_ << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1], 0, 0;
+      ekf_.P_ << 1, 0, 0, 0,
+                   0, 1, 0, 0,
+                   0, 0, 1000, 0,
+                   0, 0, 0, 1000;
+      //ekf_.P_ << 8.28042637e-02, 0, 0, 0,
+      //             0, 3.86523464e-04, 0, 0,
+      //             0, 0, 2.69361000e+01, 0,
+      //             0, 0, 0, 0;
       //cout <<"Lidar init, px,py,vx,vy"<<ekf_.x_ <<endl;
     }
 
@@ -129,7 +172,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     //save initial time stamp
     previous_timestamp_ = measurement_pack.timestamp_;
     // done initializing, no need to predict or update
-    cout <<"Init Done"<<endl;
+    //cout <<"Init Done"<<endl;
     is_initialized_ = true;
     return;
   }
@@ -160,24 +203,33 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
   float noise_ax=9.0;
   float noise_ay=9.0;
+  float pow_4_4=pow(dt,4)/4;
+  float pow_3_2=pow(dt,3)/2;
+
   //process noise
   ekf_.Q_ = MatrixXd(4, 4);
-  ekf_.Q_ << (pow(dt,4)/4)*noise_ax, 0, (pow(dt,3)/2)*noise_ax, 0,
-        0, (pow(dt,4)/4)*noise_ay, 0, (pow(dt,3)/2)*noise_ay,
-        (pow(dt,3)/2)*noise_ax, 0, pow(dt,2)*noise_ax, 0,
-        0, (pow(dt,3)/2)*noise_ay, 0, pow(dt,2)*noise_ay;
+
+  float pow_2=pow(dt,2);
+  ekf_.Q_ << (pow_4_4)*noise_ax, 0, (pow_3_2)*noise_ax, 0,
+        0, (pow_4_4)*noise_ay, 0, (pow_3_2)*noise_ay,
+        (pow_3_2)*noise_ax, 0, pow_2*noise_ax, 0,
+        0, (pow_3_2)*noise_ay, 0, pow_2*noise_ay;
   //cout<<"Q mat:  "<<ekf_.Q_<<endl;
+
+  //Predict moved to
+
+
   //cout <<"Predict Start: "<< ekf_.x_<<endl;
   //if value of dt less than a 1e-6 of a uS, forego Predict step
   //if (dt > 0.000001) {
   //	  //cout << "DT is > 1uS: "<<dt<<" : " << measurement_pack.sensor_type_<<endl;
-	  ekf_.Predict();
+  //ekf_.Predict();
   //	  } else {
   //		  //cout << "DT is < 1uS: "<<dt<< " : " << measurement_pack.sensor_type_<<endl;
   //	  }
-  cout <<"Predict done: "<<endl;
-  cout << "x_ = " << ekf_.x_ << endl;
-  cout << "P_ = " << ekf_.P_ << endl;
+  //cout <<"Predict done: "<<endl;
+  //cout << "x_ = " << ekf_.x_ << endl;
+  //cout << "P_ = " << ekf_.P_ << endl;
   /*****************************************************************************
    *  Update
    ****************************************************************************/
@@ -187,8 +239,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      * Update the state and covariance matrices.
    */
 
-  if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
 
+  if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR && (sensor_type==0 || sensor_type==2)) {
+	//predict only if radar data
+	ekf_.Predict();
+	//cout << "RADAR meas is being used due to sensor_type value: "<<sensor_type<<endl;
 	// Radar updates
     //Jacobian for H
     ekf_.H_=tools.CalculateJacobian(ekf_.x_);
@@ -196,16 +251,19 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.R_=R_radar_;
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 
-  } else {
-    // Laser updates
+  } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER && (sensor_type==1 || sensor_type==2)){
 
+	//predict only if laser data
+    ekf_.Predict();
+    // Laser updates
+	//cout << "LASER meas is being used due to sensor_type value: "<<sensor_type<<endl;
 	ekf_.H_=H_laser_;
     ekf_.R_=R_laser_;
     ekf_.Update(measurement_pack.raw_measurements_);
 
   }
-  cout <<"Update Done"<<endl;
-  // print the output
-  cout << "x_ = " << ekf_.x_ << endl;
-  cout << "P_ = " << ekf_.P_ << endl;
+  //cout <<"Update Done"<<endl;
+  //// print the output
+  //cout << "x_ = " << ekf_.x_ << endl;
+  //cout << "P_ = " << ekf_.P_ << endl;
 }
