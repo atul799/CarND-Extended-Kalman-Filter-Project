@@ -44,6 +44,11 @@ private:
   Eigen::MatrixXd R_radar_;
   Eigen::MatrixXd H_laser_;
   Eigen::MatrixXd Hj_;
+
+  //members to experiment with only laser or radar or both data
+  bool  use_radar_;
+  bool  use_laser_;
+
 };
 
 #endif /* FusionEKF_H_ */

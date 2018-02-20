@@ -96,19 +96,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 	VectorXd y = z - z_pred;
 	// phi should be between -pi and +pi
 
-	/*
-	while(y(1) < -M_PI) {
-		//cout << "phi LT PI: "<<y(1) << endl;
-		y(1) = y(1) + 2 * M_PI;
-		//cout << "phi normalized to PI: "<<y(1) << endl;
-	}
 
-
-	while(y(1) > M_PI) {
-		//cout << "phi GT PI: " << y(1) << endl;
-		y(1) = y(1) - 2 * M_PI;
-		//cout << "phi normalized to PI: "<<y(1) << endl;
-	} */
 	while (y(1) < -M_PI) y(1) += 2*M_PI;
 	while (y(1) > M_PI) y(1) -= 2*M_PI;
 
