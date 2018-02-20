@@ -5,6 +5,9 @@
 #include "FusionEKF.h"
 #include "tools.h"
 
+#include <string>
+#include <fstream>
+
 using namespace std;
 
 // for convenience
@@ -31,6 +34,21 @@ int main()
   uWS::Hub h;
 
 
+  //////////////////////////////////
+  // open a file handle to write results for visualization
+  string out_file_name="../outputs/EKF_fwd.out";
+  //string out_file_name="../outputs/EKF_rev.out";
+  //string out_file_name="../outputs/EKF_laseronly.out";
+  //string out_file_name="../outputs/EKF_radaronly.out";
+  ofstream out_file (out_file_name, ofstream::out);
+  if (!out_file.is_open())  {
+	  cerr << "Cannot open output file: " << out_file_name << endl;
+	  exit(EXIT_FAILURE);
+  }
+
+
+
+  /////////////////////////////////
   // Create a Kalman Filter instance
   FusionEKF fusionEKF;
 
@@ -39,7 +57,7 @@ int main()
   vector<VectorXd> estimations;
   vector<VectorXd> ground_truth;
 
-  h.onMessage([&fusionEKF,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&fusionEKF,&tools,&estimations,&ground_truth,&out_file](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -67,16 +85,25 @@ int main()
     	  string sensor_type;
     	  iss >> sensor_type;
 
+    	  double px_meas,py_meas;
+
     	  if (sensor_type.compare("L") == 0) {
       	  		meas_package.sensor_type_ = MeasurementPackage::LASER;
           		meas_package.raw_measurements_ = VectorXd(2);
           		float px;
       	  		float py;
+
           		iss >> px;
           		iss >> py;
           		meas_package.raw_measurements_ << px, py;
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
+
+          		//for output file
+          		px_meas=px;
+          		py_meas=py;
+
+
           } else if (sensor_type.compare("R") == 0) {
 
       	  		meas_package.sensor_type_ = MeasurementPackage::RADAR;
@@ -90,6 +117,9 @@ int main()
           		meas_package.raw_measurements_ << ro,theta, ro_dot;
           		iss >> timestamp;
           		meas_package.timestamp_ = timestamp;
+          		//for output file
+          		px_meas=ro*cos(theta);
+          		py_meas=ro*sin(theta);
           }
           float x_gt;
     	  float y_gt;
@@ -125,6 +155,14 @@ int main()
     	  
     	  estimations.push_back(estimate);
 
+    	  //RMSE gets calculated every time sensor data is seen from measurement file
+    	  //doesn't matter RADAR/LASER only flag is on in FusionKF.cpp
+    	  //this makes rmse values correct  only as many times as radar or laser data
+    	  //the section about RMSE and gt capture can be moved to radar/laser section
+    	  // of meas_pack.raw_data_ capture to make it consistent
+    	  //if the measured values and gt doesn't vary by much
+    	  //between data points this shall still be close
+
     	  VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
 
           json msgJson;
@@ -135,9 +173,15 @@ int main()
           msgJson["rmse_vx"] = RMSE(2);
           msgJson["rmse_vy"] = RMSE(3);
 
+
+
           //output RMSE to compare performance between sensors
-          cout<<"RMSE: "<<","<<RMSE(0)<<","<<RMSE(1)<<","<<RMSE(2)<<","<<RMSE(3)<<endl;
+          //cout<<"RMSE: "<<","<<RMSE(0)<<","<<RMSE(1)<<","<<RMSE(2)<<","<<RMSE(3)<<endl;
           auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
+
+          //push the data into output file
+          out_file << p_x <<"\t" << p_y <<"\t"<< v1 <<"\t"<<v2 <<"\t"<< px_meas <<"\t" << py_meas<<"\t"<<x_gt<<"\t"<<y_gt<<"\t"<<vx_gt<<"\t"<<vy_gt<<"\t"<<RMSE(0)<<"\t"<<RMSE(1)<<"\t"<<RMSE(2)<<"\t"<<RMSE(3)<<endl;
+
           // std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 	  
@@ -186,4 +230,7 @@ int main()
     return -1;
   }
   h.run();
+
+  //close the data capture file
+  out_file.close();
 }
