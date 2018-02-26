@@ -193,7 +193,7 @@ As can be seen, radar data is noisier hence estimations of positions wider than 
 
 * Combining laser and radar data RMSE on px/py/vx/vy achieved is:
 
-| px\\_rmse | py\\_rmse | vx\\_rmse | vy\\_rmse|
+| px\_rmse | py\_rmse | vx\_rmse | vy\_rmse|
 | :---: | :---: | :---: | :---: |
 | 0.0973178 | 0.0854597 | 	0.451267 | 0.439935 | 
 
