@@ -69,7 +69,7 @@ The Kalman Filter algorithm will go through the following steps:
 * First measurement - the filter will receive initial measurements of the bicycle's position relative to the car. These measurements will come from a radar or lidar sensor.
 * Initialize state and covariance matrices - the filter will initialize the bicycle's position based on the first measurement.
 * Then the car will receive another sensor measurement after a time period Δt.
-* Predict - the algorithm will predict where the bicycle will be after time Δt. One basic way to predict the bicycle location after Δt is to assume the bicycle's velocity is constant; thus the bicycle will have moved velocity*Δt. In the extended Kalman filter project, we will assume the velocity is constant.
+* Predict - the algorithm will predict where the bicycle will be after time Δt. One basic way to predict the bicycle location after Δt is to assume the bicycle's velocity is constant; thus the bicycle will have moved velocity*Δt. In the extended Kalman filter project, we will assume the velocity is constant, such a motion model is called constant velocity model (CV).
 * Update - the filter compares the "predicted" location with what the sensor measurement says. The predicted location and the measured location are combined to give an updated location. The Kalman filter will put more weight on either the predicted location or the measured location depending on the uncertainty of each value.
 * Then the car will receive another sensor measurement after a time period Δt. The algorithm then does another predict and update step.
 
@@ -193,7 +193,7 @@ As can be seen, radar data is noisier hence estimations of positions wider than 
 
 * Combining laser and radar data RMSE on px/py/vx/vy achieved is:
 
-| px_rmse | py_rmse | vx_rmse | vy_rmse|
+| px\\_rmse | py\\_rmse | vx\\_rmse | vy\\_rmse|
 | :---: | :---: | :---: | :---: |
 | 0.0973178 | 0.0854597 | 	0.451267 | 0.439935 | 
 
