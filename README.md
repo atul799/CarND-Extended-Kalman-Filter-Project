@@ -192,10 +192,11 @@ The implemented EKF was run in simulator with both sensors as well as individual
 As can be seen, radar data is noisier hence estimations of positions wider than ground truth, however, since radar does measure velocity while laser does not RMSE on velocity in radar is lesser than in laser. 
 
 * Combining laser and radar data RMSE on px/py/vx/vy achieved is:
-px_rmse:0.0973178	
-py_rmse:0.0854597	
-vx_rmse0.451267	
-vy_rmse:0.439935
+
+| px_rmse | py_rmse | vx_rmse | vy_rmse|
+| :---: | :---: | :---: | :---: |
+| 0.0973178 | 0.0854597 | 	0.451267 | 0.439935 | 
+
  
 
 
