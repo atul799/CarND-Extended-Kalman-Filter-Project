@@ -2,6 +2,46 @@
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 
+# Sensors
+---
+* Before getting into details of Kalman Filters, let's summarize LASER and Radar sensor characteristics:
+
+#How does LIDAR measurement look like
+![picture alt](./outputs/lidar_meas.jpg) *Lidar measurement*
+
+The LIDAR produces 3D measurement px,py,pz. But for the case of driving on the road, we could simplify the position of the tracked object as: px,py. But in real world where you have very steep road, you have to consider z axis as well. Also in application like airplane and drone, you definitely want to consider pz as well.
+
+#How does RADAR measurement look like
+
+![picture alt](./outputs/radar_meas.jpg) *Radar measurement*
+
+Radar measures position of object in polar coordinates, bearing in radian angle and radial velocity. The position of the object can be estimates as:
+px=rho*cos(phi)
+py=rho*sin(phi)
+such that rho=sqrt(px*px+py*py)
+This non-linearity in measured state of radar requires use of extended or unscented kalman filter because resulting state vector are non-gaussian.
+
+ 
+#Comparison of LIDAR, RADAR and Camera
+
+| Sensor type | LIDAR |	RADAR |	Camera | 
+| :---: | :---: | :---: | :---: |
+| Resolution | median |	low | high |
+| Direct velocity measure |	no |	yes  |	no    |
+| All-weather                   |	bad  |	good |	bad   |
+| Sensor size                   |	large |	small |	small |
+| sense non-line of sight object |	no   |	yes  |	no    |
+
+Note:
+
+* LIDAR wavelength in infrared; RADAR wavelength in mm.
+* LIDAR most affected by dirt and small debris.
+
+
+
+![picture alt](./outputs/camera-vs-radar-vs-lidar_1.png) *Camera Vs Radar vs Lidar*
+
+
 
 # Project Goals
 ---
@@ -16,7 +56,7 @@ The goals / steps in this project are the following:
 
 
 
-# Overview
+# Overview of the Project
 ---
 
 In this project a kalman filter is used to estimate the state of a moving object of interest with noisy lidar and radar measurements. 
@@ -78,6 +118,24 @@ All the other steps remain exactly same as in Laser update step (calculate kalma
 * Jacobian function is implemented in tool.cpp file 
 
 * It is important to make sure to normalize ϕ in the y vector (z-z_pred) so that its angle is between −π and π
+
+
+
+![picture alt](./outputs/ekf_vs_kf.jpg) *Linear vs Extended kalman Filter*
+
+* x is the mean state vector. 
+* F is the stae transition matrix.
+* u is the external motion vector.
+* P is the state covariance matrix, indicating the uncertainty of the object's state.
+* Q is the process covariance matrix.
+* H is the measurement matrix.
+* z is the measurement.
+* R is the measurement noise.
+* I is the identity matrix.
+* K is the Kalman filter gain.
+* Hj and Fj are the jacobian matrix.
+
+
 
 # Performance of EKF
 ---
